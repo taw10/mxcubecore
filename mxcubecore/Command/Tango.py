@@ -19,6 +19,7 @@
 #  along with MXCuBE. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import time
 import gevent
 import gevent.event
 
@@ -345,8 +346,33 @@ class TangoChannel(ChannelObject):
 
         return value
 
-    def set_value(self, new_value):
-        self.device.write_attribute(self.attribute_name, new_value)
+    def set_value(self, new_value, max_attempts=3, wait_time=1):
+        for _ in range(max_attempts):
+            try:
+                # Check if the axis is moving
+                if self.device.State() == PyTango.DevState.MOVING:
+                    print("Axis is currently moving. Waiting...")
+                    time.sleep(wait_time)
+                    continue  # Retry after waiting
+
+                # Set the new value
+                self.device.write_attribute(self.attribute_name, new_value)
+                print(f"Set {self.attribute_name} to {new_value}")
+                break  # Successfully set the value
+
+            except PyTango.DevFailed as e:
+                for err in e.args:
+                    if err.reason == "API_AttributeFailed":
+                        print("Failed to write_attribute. Retrying...")
+                        time.sleep(wait_time)
+                        continue  # Retry after waiting
+
+                raise
+
+        else:
+            # Max attempts reached without success
+            print(f"Failed to set {self.attribute_name} after {max_attempts} attempts.")
+
 
     def is_connected(self):
         return self.device is not None
