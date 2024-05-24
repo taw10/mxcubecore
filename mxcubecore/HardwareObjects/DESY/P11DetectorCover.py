@@ -98,6 +98,12 @@ class P11DetectorCover(AbstractShutter):
         values_dict.update({"MOVING": "MOVING"})
         self.VALUES = Enum("ValueEnum", values_dict)
 
+    def _initialise_values(self):
+        """Add additional, known in advance states to VALUES"""
+        values_dict = {item.name: item.value for item in self.VALUES}
+        values_dict.update({"MOVING": "MOVING"})
+        self.VALUES = Enum("ValueEnum", values_dict)
+
     def get_value(self):
         if self.simulation:
             return self.simulated_update()

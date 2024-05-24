@@ -51,6 +51,14 @@ class P11Collect(AbstractCollect):
 
         super().init()
 
+    def init(self):
+
+        super(P11Collect, self).init()
+
+        # os.system("/opt/xray/bin/adxv -socket -colors Gray -rings &")
+
+        # os.system("/bin/bash /gpfs/local/shared/MXCuBE/STRELA/start_viewer_zmq.sh")
+
         self.default_speed = self.get_property("omega_default_speed", 130)
         self.turnback_time = self.get_property("turnback_time", 0.3)
         self.filter_server_name = self.get_property("filterserver")
@@ -437,7 +445,7 @@ class P11Collect(AbstractCollect):
         angles for characterisation.
 
         :param start_angle: The starting angle for the characterisation acquisition
-        :param img_range: The `img_range` parameter represents the range of angles over which the single image 
+        :param img_range: The `img_range` parameter represents the range of angles over which the single image
         will be collected
         :param nimages: The parameter `nimages` represents the number of images to be collected during
         the characterisation process (1, 2, 4).

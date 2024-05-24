@@ -63,6 +63,12 @@ class P11FastShutter(AbstractNState):
         values_dict.update({"OPEN": "Open", "CLOSED": "Closed"})
         self.VALUES = Enum("ValueEnum", values_dict)
 
+    def _initialise_values(self):
+        """Add additional, known in advance states to VALUES"""
+        values_dict = {item.name: item.value for item in self.VALUES}
+        values_dict.update({"OPEN": "Open", "CLOSED": "Closed"})
+        self.VALUES = Enum("ValueEnum", values_dict)
+
     def get_value(self):
         return self.update_fast_shutter()
 

@@ -19,6 +19,7 @@
 #  along with MXCuBE. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import time
 import gevent
 import gevent.event
 
@@ -28,11 +29,7 @@ except ImportError:
     import queue
 
 
-from mxcubecore.CommandContainer import (
-    CommandObject,
-    ChannelObject,
-    ConnectionError,
-)
+from mxcubecore.CommandContainer import CommandObject, ChannelObject, ConnectionError
 from mxcubecore import Poller
 from mxcubecore.dispatcher import saferef
 import numpy
@@ -173,6 +170,13 @@ class TangoChannel(ChannelObject):
         self.timeout = int(timeout)
         self.read_as_str = kwargs.get("read_as_str", False)
         self._device_initialized = gevent.event.Event()
+        #logging.getLogger("HWR").debug(
+        #    "creating Tango attribute %s/%s, polling=%s, timeout=%d",
+        #    self.device_name,
+        #    self.attribute_name,
+        #    polling,
+        #    self.timeout,
+        #)
         self.init_device()
         self.continue_init(None)
         """
@@ -353,8 +357,33 @@ class TangoChannel(ChannelObject):
 
         return value
 
-    def set_value(self, new_value):
-        self.device.write_attribute(self.attribute_name, new_value)
+    def set_value(self, new_value, max_attempts=3, wait_time=1):
+        for _ in range(max_attempts):
+            try:
+                # Check if the axis is moving
+                if self.device.State() == PyTango.DevState.MOVING:
+                    print("Axis is currently moving. Waiting...")
+                    time.sleep(wait_time)
+                    continue  # Retry after waiting
+
+                # Set the new value
+                self.device.write_attribute(self.attribute_name, new_value)
+                print(f"Set {self.attribute_name} to {new_value}")
+                break  # Successfully set the value
+
+            except PyTango.DevFailed as e:
+                for err in e.args:
+                    if err.reason == "API_AttributeFailed":
+                        print("Failed to write_attribute. Retrying...")
+                        time.sleep(wait_time)
+                        continue  # Retry after waiting
+
+                raise
+
+        else:
+            # Max attempts reached without success
+            print(f"Failed to set {self.attribute_name} after {max_attempts} attempts.")
+
 
     def is_connected(self):
         return self.device is not None
